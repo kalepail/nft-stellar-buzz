@@ -3,9 +3,9 @@
     <button @click="refresh" :disabled="loading">Refresh</button>
 
     {{
-      parseInt(userAccountLoaded.balances.find(
+      Math.ceil(parseFloat(userAccountLoaded.balances.find(
         ({ asset_type }) => asset_type === 'native'
-      ).balance)
+      ).balance))
     }}
     XLM
   </p>
@@ -28,7 +28,7 @@
     <label>
       IPFS Hash
       <input type="text" v-model="ipfsHash" />
-      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHash}`" v-if="ipfsHash" />
+      <img :src="`${apiUrl}/ipfs/${ipfsHash}`" v-if="ipfsHash" />
     </label>
 
     <button :disabled="loading">Mint</button>
@@ -46,14 +46,14 @@
       )"
       :key="balance.asset_type + balance.asset_code + balance.asset_issuer"
     >
-      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
+      <img :src="`${apiUrl}/ipfs/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
       <button @click="trade('sell', balance)" :disabled="loading">Sell</button>
     </li>
   </ul>
 
   <ul v-if="offers.length">
     <li v-for="offer in offers" :key="offer.id">
-      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHashMap[
+      <img :src="`${apiUrl}/ipfs/${ipfsHashMap[
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
       ]}`" v-if="ipfsHashMap[
@@ -75,8 +75,9 @@ const server = new Server('https://horizon-testnet.stellar.org');
 export default {
   data() {
     return {
-      signer: 'GD6266NKBLK4VVGWUKY4HMNHADNDPYY32RXEHSQ354SBAMKM5XQZDZTZ',
-      sponsor: 'GBJHUYYBOJV5ZQOXK3AI4ADDZAHVT2GL7VFW3AUDG4TRL2VPBCI43HV6',
+      signer: import.meta.env.VITE_SIGNER_PK,
+      sponsor: import.meta.env.VITE_SPONSOR_PK,
+      apiUrl: import.meta.env.VITE_WRANGLER_API,
 
       userSecret: localStorage.getItem('secret'),
       issuerAccount: null,
@@ -232,7 +233,7 @@ export default {
     mint() {
       this.loading = true
 
-      return fetch(`https://nft-api.stellar.buzz/contract/mint`, {
+      return fetch(`${this.apiUrl}/contract/mint`, {
         method: 'POST',
         body: JSON.stringify({
           userAccount: this.userAccount,
@@ -263,7 +264,7 @@ export default {
 
       return (
         side === 'buy'
-        ? fetch(`https://nft-api.stellar.buzz/contract/offer`, {
+        ? fetch(`${this.apiUrl}/contract/offer`, {
             method: 'POST',
             body: JSON.stringify({
               userAccount: this.userAccount,
@@ -274,7 +275,7 @@ export default {
               selling: 'native',
             }),
           })
-        : fetch(`https://nft-api.stellar.buzz/contract/offer`, {
+        : fetch(`${this.apiUrl}/contract/offer`, {
             method: 'POST',
             body: JSON.stringify({
               userAccount: this.userAccount,
@@ -319,15 +320,11 @@ h1 {
 }
 img {
   display: block;
-  image-rendering: optimizeSpeed;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-  image-rendering: -moz-crisp-edges;
 }
 form {
   display: flex;
   flex-direction: column;
-  align-items: start;
+  align-items: flex-start;
 }
 label {
   display: flex;
@@ -377,7 +374,7 @@ ul {
 li {
   display: flex;
   flex-direction: column;
-  align-items: end;
+  align-items: flex-end;
   margin: 0 10px 10px 0;
   background-color: white;
   box-shadow: 0 5px 10px lightgray, inset 0 0 0 1px lightgray;

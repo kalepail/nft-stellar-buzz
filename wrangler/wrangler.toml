@@ -3,12 +3,23 @@ type = "javascript"
 compatibility_date = "2022-03-03"
 
 account_id = "ba55b7ae9acfb3ed152103e3497c0752"
-zone_id = "f0a8062abb52ff32bd17c28172f5e10e"
-route = "nft-api.stellar.buzz/*"
 usage_model = "bundled"
+
+[env.local]
 workers_dev = true
 
-[vars]
+[env.local.vars]
+HORIZON_URL = "https://horizon-testnet.stellar.org"
+STELLAR_NETWORK = "TESTNET"
+# SIGNER_SK = contract-signer-secret // upload via wrangler (https://developers.cloudflare.com/workers/cli-wrangler/commands/#put)
+# SPONSOR_SK = offer-sponsor-secret // upload via wrangler
+
+[env.public]
+zone_id = "f0a8062abb52ff32bd17c28172f5e10e"
+route = "nft-api.stellar.buzz/*"
+workers_dev = false
+
+[env.public.vars]
 HORIZON_URL = "https://horizon-testnet.stellar.org"
 STELLAR_NETWORK = "TESTNET"
 # SIGNER_SK = contract-signer-secret // upload via wrangler (https://developers.cloudflare.com/workers/cli-wrangler/commands/#put)

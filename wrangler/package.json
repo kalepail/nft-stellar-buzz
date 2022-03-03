@@ -3,7 +3,8 @@
   "module": "./dist/shim.mjs",
   "scripts": {
     "build": "webpack",
-    "deploy": "wrangler publish"
+    "deploy:local": "wrangler publish --env local",
+    "deploy:public": "wrangler publish --env public"
   },
   "dependencies": {
     "@tinyanvil/base91": "0.0.1",
