@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "npx babel-node --presets @babel/preset-env test.js"
+  },
+  "dependencies": {
+    "bignumber.js": "^9.0.2",
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.2.1",
+    "stellar-sdk": "^10.0.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.5",
+    "@babel/node": "^7.16.8",
+    "@babel/preset-env": "^7.16.11",
+    "babel-loader": "^8.2.3"
+  }
+}
