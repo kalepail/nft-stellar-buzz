@@ -28,7 +28,7 @@
     <label>
       IPFS Hash
       <input type="text" v-model="ipfsHash" />
-      <img :src="`https://gateway.pinata.cloud/ipfs/${ipfsHash}`" v-if="ipfsHash" />
+      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHash}`" v-if="ipfsHash" />
     </label>
 
     <button :disabled="loading">Mint</button>
@@ -46,17 +46,20 @@
       )"
       :key="balance.asset_type + balance.asset_code + balance.asset_issuer"
     >
-      <img :src="`https://gateway.pinata.cloud/ipfs/${ipfsHashMap[balance.asset_issuer]}?preview=1`" />
+      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
       <button @click="trade('sell', balance)" :disabled="loading">Sell</button>
     </li>
   </ul>
 
   <ul v-if="offers.length">
     <li v-for="offer in offers" :key="offer.id">
-      <img :src="`https://gateway.pinata.cloud/ipfs/${ipfsHashMap[
+      <img :src="`https://nft-api.stellar.buzz/ipfs/${ipfsHashMap[
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
-      ]}?preview=1`" />
+      ]}`" v-if="ipfsHashMap[
+        offer.buying.asset_issuer
+        || offer.selling.asset_issuer
+      ]" />
       <button @click="trade('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
       <button @click="trade('buy', offer)" :disabled="loading" v-else>Buy</button>
     </li>
@@ -229,12 +232,11 @@ export default {
     mint() {
       this.loading = true
 
-      return fetch(`https://igvfiv902k.execute-api.us-east-1.amazonaws.com/contract`, {
+      return fetch(`https://nft-api.stellar.buzz/contract/mint`, {
         method: 'POST',
         body: JSON.stringify({
           userAccount: this.userAccount,
           issuerAccount: this.issuerAccount,
-          command: 'mint',
           ipfsHash: this.ipfsHash
         })
       })
@@ -261,25 +263,23 @@ export default {
 
       return (
         side === 'buy'
-        ? fetch(`https://igvfiv902k.execute-api.us-east-1.amazonaws.com/contract`, {
+        ? fetch(`https://nft-api.stellar.buzz/contract/offer`, {
             method: 'POST',
             body: JSON.stringify({
               userAccount: this.userAccount,
               issuerAccount,
               offerId: isDelete ? record.id : 0,
-              command: 'offer',
               side: 'buy',
               price: '100',
               selling: 'native',
             }),
           })
-        : fetch(`https://igvfiv902k.execute-api.us-east-1.amazonaws.com/contract`, {
+        : fetch(`https://nft-api.stellar.buzz/contract/offer`, {
             method: 'POST',
             body: JSON.stringify({
               userAccount: this.userAccount,
               issuerAccount,
               offerId: isDelete ? record.id : 0,
-              command: 'offer',
               side: 'sell',
               price: '100',
               buying: 'native',

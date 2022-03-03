@@ -1,0 +1,33 @@
+{
+  "private": true,
+  "module": "./dist/shim.mjs",
+  "scripts": {
+    "build": "webpack",
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "@tinyanvil/base91": "0.0.1",
+    "base-ex": "^0.3.2",
+    "bignumber.js": "^9.0.2",
+    "bluebird": "^3.7.2",
+    "fast-png": "^5.0.4",
+    "itty-router": "^2.5.1",
+    "itty-router-extras": "^0.4.2",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.1",
+    "stellar-base": "^6.0.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.5",
+    "@babel/plugin-proposal-optional-chaining": "^7.14.5",
+    "@babel/preset-env": "^7.15.4",
+    "babel-loader": "^8.2.2",
+    "buffer": "^6.0.3",
+    "copy-webpack-plugin": "^9.0.1",
+    "node-fetch": "^2.6.1",
+    "path": "^0.12.7",
+    "terser-webpack-plugin": "^5.2.3",
+    "webpack": "^5.52.0",
+    "webpack-cli": "^4.8.0"
+  }
+}
