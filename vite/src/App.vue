@@ -149,9 +149,9 @@ export default {
         issuerAccountLoaded,
         offers
       ] = await Promise.all([
-        this.updateAccount(this.userAccount),
-        this.updateAccount(this.issuerAccount),
-        this.updateOffers()
+        this.userAccount ? this.updateAccount(this.userAccount) : null,
+        this.issuerAccount ? this.updateAccount(this.issuerAccount) : null,
+        this.sponsor ? this.updateOffers() : null
       ])
 
       this.userAccountLoaded = userAccountLoaded;
@@ -169,32 +169,30 @@ export default {
       return server
       .friendbot(newAccount)
       .call()
-      .then(() => {
-        return server
-        .loadAccount(newAccount)
-        .then((account) => {
-          if (type === 'user')
-            return account
-          else if (type === 'issuer') {
-            const transaction = new TransactionBuilder(account, {
-              fee: 10000000,
-              networkPassphrase: Networks.TESTNET
-            })
-            .addOperation(Operation.setOptions({
-              signer: {
-                ed25519PublicKey: this.signer,
-                weight: 1
-              }
-            }))
-            .setTimeout(0)
-            .build()
+      .then(() => server
+      .loadAccount(newAccount)
+      .then((account) => {
+        if (type === 'user')
+          return account
+        else if (type === 'issuer') {
+          const transaction = new TransactionBuilder(account, {
+            fee: 10000000,
+            networkPassphrase: Networks.TESTNET
+          })
+          .addOperation(Operation.setOptions({
+            signer: {
+              ed25519PublicKey: this.signer,
+              weight: 1
+            }
+          }))
+          .setTimeout(0)
+          .build()
 
-            transaction.sign(newAccountKeypair)
+          transaction.sign(newAccountKeypair)
 
-            return server.submitTransaction(transaction)
-          }
-        })
-      })
+          return server.submitTransaction(transaction)
+        }
+      }))
       .then(() => {
         if (type === 'user')
           this.userSecret = newAccountKeypair.secret()
@@ -215,27 +213,16 @@ export default {
         .then(handleResponse)
     },
     updateAccount(accountId) {
-      if (!accountId)
-        return
-
       return server
       .loadAccount(accountId)
       .then((account) => {
         if (account.data_attr.ipfshash)
           this.ipfsHashMap[account.id] = atob(account.data_attr.ipfshash)
 
-        account.balances.forEach((balance) => {
-          if (
-            balance.asset_type !== 'native' 
-            && balance.asset_code === 'NFT'
-          ) {
-            server.loadAccount(balance.asset_issuer)
-            .then((account) => {
-              if (account.data_attr.ipfshash)
-                this.ipfsHashMap[account.id] = atob(account.data_attr.ipfshash)
-            })
-          }
-        })
+        account.balances.filter((balance) => 
+          balance.asset_type !== 'native' 
+          && balance.asset_code === 'NFT'
+        ).forEach((balance) => this.updateAccount(balance.asset_issuer))
 
         return account
       })
@@ -247,8 +234,10 @@ export default {
         .call()
         .then(({ records }) => {
           records.forEach((record) => {
-            this.updateAccount(record.selling.asset_issuer)
-            this.updateAccount(record.buying.asset_issuer)
+            if (record.selling.asset_issuer)
+              this.updateAccount(record.selling.asset_issuer)
+            if (record.buying.asset_issuer)
+              this.updateAccount(record.buying.asset_issuer)
           })
 
           return records
