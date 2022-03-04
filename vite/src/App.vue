@@ -12,7 +12,7 @@
 
   <h1>Mint NFT</h1>
 
-  <form @submit.prevent="mint">
+  <form @submit.prevent="apiMint">
     <label>
       User Secret
       <input type="text" v-model="userSecret" />
@@ -48,7 +48,7 @@
       @click="flag(balance.asset_issuer)"
     >
       <img :src="`${apiUrl}/ipfs/${balance.asset_issuer}/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
-      <button @click="offer('sell', balance)" :disabled="loading">Sell</button>
+      <button @click="apiOffer('sell', balance)" :disabled="loading">Sell</button>
     </li>
   </ul>
 
@@ -68,13 +68,15 @@
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
       ]" />
-      <button @click="offer('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
-      <button @click="offer('buy', offer)" :disabled="loading" v-else>Buy</button>
+      <button @click="apiOffer('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
+      <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else></button>
     </li>
   </ul>
 </template>
 
 <script>
+import BigNumber from 'bignumber.js'
+
 import { handleResponse } from './@js/utils'
 
 const { Keypair, Server, Transaction, TransactionBuilder, Networks, StrKey, Operation } = StellarSdk;
@@ -244,7 +246,7 @@ export default {
         });
     },
 
-    mint() {
+    apiMint() {
       this.loading = true
 
       return fetch(`${this.apiUrl}/contract/mint`, {
@@ -270,7 +272,19 @@ export default {
       })
       .finally(() => this.loading = false)
     },
-    offer(side, record, command) {
+    apiOffer(side, record, command) {
+      let price
+
+      if (side === 'sell')
+        price = prompt('Enter the sale price in XLM')
+      else
+        price = record.price
+
+      if (!price)
+        return
+
+      price = new BigNumber(price).toFixed(7)
+
       this.loading = true
 
       const issuerAccount = record.asset_issuer || record.buying.asset_issuer || record.selling.asset_issuer
@@ -284,8 +298,8 @@ export default {
               userAccount: this.userAccount,
               issuerAccount,
               offerId: isDelete ? record.id : 0,
-              side: 'buy',
-              price: '100',
+              side,
+              price,
               selling: 'native',
             }),
           })
@@ -295,8 +309,8 @@ export default {
               userAccount: this.userAccount,
               issuerAccount,
               offerId: isDelete ? record.id : 0,
-              side: 'sell',
-              price: '100',
+              side,
+              price,
               buying: 'native',
             }),
           })
@@ -312,6 +326,14 @@ export default {
       .then(() => this.refresh())
       .finally(() => this.loading = false)
     },
+
+    offerPriceString(offer) {
+      return `
+        <span>Buy for <strong>${parseFloat(new BigNumber(offer.price).times(1.1).toFixed(7))} XLM</strong></span>
+        <span>${parseFloat(new BigNumber(offer.price).toFixed(7))} XLM base</span>
+        <span>+10% royalty (${parseFloat(new BigNumber(offer.price).times(0.1).toFixed(7))} XLM)</span>
+      `
+    }
   },
 };
 </script>
@@ -363,6 +385,9 @@ button {
   height: 30px;
   cursor: pointer;
 
+  &:hover {
+    color: blue;
+  }
   &:disabled {
     color: gray;
     border: solid 1px gray;
@@ -382,8 +407,9 @@ input {
   font-size: 12px;
 }
 ul {
-    display: flex;
-    flex-wrap: wrap;
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -10px;
 }
 li {
   display: flex;
@@ -396,8 +422,30 @@ li {
   border-radius: 5px;
 
   img {
-    height: calc(16px * 8);
+    max-width: 100%;
+    max-height: calc(16px * 12);
     margin-bottom: 10px;
   }
+  button {
+    height: auto;
+    padding: 5px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.2;
+
+    span {
+
+      &:first-of-type {
+        margin-bottom: 5px;
+      }
+      &:nth-child(n + 2) {
+        color: gray;
+      }
+    }
+  }
+}
+strong {
+  font-weight: 600;
 }
 </style>
