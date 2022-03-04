@@ -69,7 +69,7 @@
         || offer.selling.asset_issuer
       ]" />
       <button @click="apiOffer('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
-      <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else></button>
+      <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else-if="userAccountLoaded"></button>
     </li>
   </ul>
 </template>
@@ -424,7 +424,6 @@ li {
   img {
     max-width: 100%;
     max-height: calc(16px * 12);
-    margin-bottom: 10px;
   }
   button {
     height: auto;
@@ -433,6 +432,7 @@ li {
     flex-direction: column;
     align-items: flex-start;
     line-height: 1.2;
+    margin-top: 10px;
 
     span {
 
