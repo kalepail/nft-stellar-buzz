@@ -16,8 +16,7 @@ export default async function offer(body, env) {
   const {
     userAccount,
     issuerAccount,
-    offerId = 0,
-    side,
+    offerId = 0
   } = body
 
   const issuerAccountLoaded = await fetch(`${env.HORIZON_URL}/accounts/${issuerAccount}`)
@@ -91,33 +90,20 @@ export default async function offer(body, env) {
       || new BigNumber(NFTBalance.balance).isEqualTo(0)
     ) {
       ops.push(
-        side === 'buy'
-          ? Operation.pathPaymentStrictReceive({ // buying NFT for XLM
-            sendAsset: selling,
-            sendMax: price,
-            destination: userAccount,
-            destAsset: buying,
-            destAmount: '1',
-            path: [],
-            source: userAccount
-          })
-          : Operation.pathPaymentStrictSend({ // selling XLM for NFT
-            sendAsset: selling,
-            sendAmount: amount,
-            destination: userAccount,
-            destAsset: buying,
-            destMin: '1',
-            path: [],
-            source: userAccount
-          }),
-      )
+        Operation.pathPaymentStrictReceive({ // buying NFT for XLM
+          sendAsset: selling,
+          sendMax: price,
+          destination: userAccount,
+          destAsset: buying,
+          destAmount: '1',
+          path: [],
+          source: userAccount
+        }),
 
-      // Royalty payment if we wouldn't be paying ourselves
-      if (userAccount !== issuerAccountLoaded.inflation_destination) ops.push(
-        Operation.payment({
+        Operation.payment({  // Royalty payment
           destination: issuerAccountLoaded.inflation_destination,
           asset: selling,
-          amount: new BigNumber(side === 'buy' ? price : amount).times(0.1).toFixed(7), // 10% of NFT counter asset
+          amount: new BigNumber(price).times(0.1).toFixed(7), // 10% of NFT counter asset
           source: userAccount
         }),
       )
@@ -129,23 +115,14 @@ export default async function offer(body, env) {
         source: sponsorAccount
       }),
 
-      side === 'buy'
-        ? Operation.manageBuyOffer({
-          selling,
-          buying,
-          buyAmount: amount,
-          price,
-          offerId,
-          source: userAccount
-        })
-        : Operation.manageSellOffer({
-          selling,
-          buying,
-          amount,
-          price,
-          offerId,
-          source: userAccount
-        }),
+      Operation.manageSellOffer({
+        selling,
+        buying,
+        amount,
+        price,
+        offerId,
+        source: userAccount
+      }),
 
       Operation.endSponsoringFutureReserves({
         source: userAccount

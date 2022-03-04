@@ -68,7 +68,7 @@
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
       ]" />
-      <button @click="apiOffer('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
+      <button @click="apiOffer('delete', offer)" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
       <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else-if="userAccountLoaded"></button>
     </li>
   </ul>
@@ -127,6 +127,8 @@ export default {
     },
   },
   created() {
+    this.refresh();
+
     if (location.pathname.indexOf('admin') > -1) {
       history.replaceState(null, null, '/')
       this.runAsAdmin = true
@@ -139,26 +141,23 @@ export default {
       throw err
     })
   },
-  mounted() {
-    this.refresh();
-  },
   methods: {
     async refresh() {
       this.loading = true
       
       const [
+        offers,
         userAccountLoaded,
         issuerAccountLoaded,
-        offers
       ] = await Promise.all([
+        this.updateOffers(),
         this.userAccount ? this.updateAccount(this.userAccount) : null,
         this.issuerAccount ? this.updateAccount(this.issuerAccount) : null,
-        this.sponsor ? this.updateOffers() : null
       ])
 
+      this.offers = offers;
       this.userAccountLoaded = userAccountLoaded;
       this.issuerAccountLoaded = issuerAccountLoaded;
-      this.offers = offers;
 
       this.loading = false
     },
@@ -176,6 +175,7 @@ export default {
       .then((account) => {
         if (type === 'user')
           return account
+
         else if (type === 'issuer') {
           const transaction = new TransactionBuilder(account, {
             fee: 10000000,
@@ -198,6 +198,7 @@ export default {
       .then(() => {
         if (type === 'user')
           this.userSecret = newAccountKeypair.secret()
+
         else if (type === 'issuer')
           this.issuerAccount = newAccount
       })
@@ -211,8 +212,7 @@ export default {
       if (confirm('Are you sure you want to flag this NFT?'))
         return fetch(`${this.apiUrl}/flag/${issuerAccount}`, {
           method: 'POST'
-        })
-        .then(handleResponse)
+        }).then(handleResponse)
     },
     updateAccount(accountId) {
       return server
@@ -221,7 +221,8 @@ export default {
         if (account.data_attr.ipfshash)
           this.ipfsHashMap[account.id] = atob(account.data_attr.ipfshash)
 
-        account.balances.filter((balance) => 
+        account.balances
+        .filter((balance) => 
           balance.asset_type !== 'native' 
           && balance.asset_code === 'NFT'
         ).forEach((balance) => this.updateAccount(balance.asset_issuer))
@@ -235,13 +236,11 @@ export default {
         .sponsor(this.sponsor)
         .call()
         .then(({ records }) => {
-          records.forEach((record) => {
-            if (record.selling.asset_issuer)
-              this.updateAccount(record.selling.asset_issuer)
-            if (record.buying.asset_issuer)
-              this.updateAccount(record.buying.asset_issuer)
-          })
-
+          records.forEach((record) => this.updateAccount(
+            record.buying.asset_issuer 
+            || record.selling.asset_issuer
+          ))
+          
           return records
         });
     },
@@ -272,7 +271,7 @@ export default {
       })
       .finally(() => this.loading = false)
     },
-    apiOffer(side, record, command) {
+    apiOffer(side, record) {
       let price
 
       if (side === 'sell')
@@ -288,33 +287,17 @@ export default {
       this.loading = true
 
       const issuerAccount = record.asset_issuer || record.buying.asset_issuer || record.selling.asset_issuer
-      const isDelete = command === 'delete'
 
-      return (
-        side === 'buy'
-        ? fetch(`${this.apiUrl}/contract/offer`, {
-            method: 'POST',
-            body: JSON.stringify({
-              userAccount: this.userAccount,
-              issuerAccount,
-              offerId: isDelete ? record.id : 0,
-              side,
-              price,
-              selling: 'native',
-            }),
-          })
-        : fetch(`${this.apiUrl}/contract/offer`, {
-            method: 'POST',
-            body: JSON.stringify({
-              userAccount: this.userAccount,
-              issuerAccount,
-              offerId: isDelete ? record.id : 0,
-              side,
-              price,
-              buying: 'native',
-            }),
-          })
-      )
+      return fetch(`${this.apiUrl}/contract/offer`, {
+        method: 'POST',
+        body: JSON.stringify({
+          userAccount: this.userAccount,
+          issuerAccount,
+          offerId: side === 'delete' ? record.id : 0,
+          price,
+          [side === 'sell' ? 'buying' : 'selling']: 'native'
+        }),
+      })
       .then(handleResponse)
       .then((xdr) => {
         const transaction = new Transaction(xdr, Networks.TESTNET);
@@ -334,8 +317,8 @@ export default {
         <span>+10% royalty (${parseFloat(new BigNumber(offer.price).times(0.1).toFixed(7))} XLM)</span>
       `
     }
-  },
-};
+  }
+}
 </script>
 
 <style lang="scss">
