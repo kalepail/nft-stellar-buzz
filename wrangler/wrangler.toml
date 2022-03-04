@@ -7,6 +7,9 @@ usage_model = "bundled"
 
 [env.local]
 workers_dev = true
+kv_namespaces = [ 
+	 { binding = "FLAGGED", id = "cf26f4acc3104af98085fbae12be91a5" }
+]
 
 [env.local.vars]
 HORIZON_URL = "https://horizon-testnet.stellar.org"
@@ -18,6 +21,9 @@ STELLAR_NETWORK = "TESTNET"
 zone_id = "f0a8062abb52ff32bd17c28172f5e10e"
 route = "nft-api.stellar.buzz/*"
 workers_dev = false
+kv_namespaces = [ 
+	 { binding = "FLAGGED", id = "cf26f4acc3104af98085fbae12be91a5" }
+]
 
 [env.public.vars]
 HORIZON_URL = "https://horizon-testnet.stellar.org"

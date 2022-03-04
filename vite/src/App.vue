@@ -28,7 +28,7 @@
     <label>
       IPFS Hash
       <input type="text" v-model="ipfsHash" />
-      <img :src="`${apiUrl}/ipfs/${ipfsHash}`" v-if="ipfsHash" />
+      <img :src="`${apiUrl}/ipfs/0x0/${ipfsHash}`" v-if="ipfsHash" />
     </label>
 
     <button :disabled="loading">Mint</button>
@@ -45,23 +45,31 @@
         && !parseFloat(balance.selling_liabilities)
       )"
       :key="balance.asset_type + balance.asset_code + balance.asset_issuer"
+      @click="flag(balance.asset_issuer)"
     >
-      <img :src="`${apiUrl}/ipfs/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
-      <button @click="trade('sell', balance)" :disabled="loading">Sell</button>
+      <img :src="`${apiUrl}/ipfs/${balance.asset_issuer}/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
+      <button @click="offer('sell', balance)" :disabled="loading">Sell</button>
     </li>
   </ul>
 
   <ul v-if="offers.length">
-    <li v-for="offer in offers" :key="offer.id">
-      <img :src="`${apiUrl}/ipfs/${ipfsHashMap[
+    <li 
+      v-for="offer in offers" 
+      :key="offer.id"
+      @click="flag(offer.buying.asset_issuer || offer.selling.asset_issuer)"
+    >
+      <img :src="`${apiUrl}/ipfs/${
+        offer.buying.asset_issuer 
+        || offer.selling.asset_issuer
+      }/${ipfsHashMap[
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
       ]}`" v-if="ipfsHashMap[
         offer.buying.asset_issuer
         || offer.selling.asset_issuer
       ]" />
-      <button @click="trade('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
-      <button @click="trade('buy', offer)" :disabled="loading" v-else>Buy</button>
+      <button @click="offer('buy', offer, 'delete')" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
+      <button @click="offer('buy', offer)" :disabled="loading" v-else>Buy</button>
     </li>
   </ul>
 </template>
@@ -75,6 +83,8 @@ const server = new Server('https://horizon-testnet.stellar.org');
 export default {
   data() {
     return {
+      runAsAdmin: false,
+
       signer: import.meta.env.VITE_SIGNER_PK,
       sponsor: import.meta.env.VITE_SPONSOR_PK,
       apiUrl: import.meta.env.VITE_WRANGLER_API,
@@ -115,6 +125,11 @@ export default {
     },
   },
   created() {
+    if (location.pathname.indexOf('admin') > -1) {
+      history.replaceState(null, null, '/')
+      this.runAsAdmin = true
+    }
+
     server.loadAccount(this.sponsor)
     .catch((err) => {
       if (err?.response?.status === 404)
@@ -189,6 +204,16 @@ export default {
       .finally(() => this.loading = false)
     },
 
+    flag(issuerAccount) {
+      if (!this.runAsAdmin)
+        return
+
+      if (confirm('Are you sure you want to flag this NFT?'))
+        return fetch(`${this.apiUrl}/flag/${issuerAccount}`, {
+          method: 'POST'
+        })
+        .then(handleResponse)
+    },
     updateAccount(accountId) {
       if (!accountId)
         return
@@ -256,7 +281,7 @@ export default {
       })
       .finally(() => this.loading = false)
     },
-    trade(side, record, command) {
+    offer(side, record, command) {
       this.loading = true
 
       const issuerAccount = record.asset_issuer || record.buying.asset_issuer || record.selling.asset_issuer

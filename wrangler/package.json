@@ -4,7 +4,8 @@
   "scripts": {
     "build": "webpack",
     "deploy:local": "wrangler publish --env local",
-    "deploy:public": "wrangler publish --env public"
+    "deploy:public": "wrangler publish --env public",
+    "deploy:all": "npm run deploy:local && npm run deploy:public"
   },
   "dependencies": {
     "@tinyanvil/base91": "0.0.1",

@@ -1,6 +1,7 @@
 import { Keypair, Networks, Transaction } from 'stellar-base'
 import {
   text,
+  status,
   StatusError,
   ThrowableRouter,
 } from 'itty-router-extras'
@@ -9,27 +10,6 @@ import mint from './contracts/mint'
 import offer from './contracts/offer'
 
 const router = ThrowableRouter()
-
-router.get('/ipfs/:hash', async (request, env, ctx) => {
-  const response = await fetch(`https://ipfs.io/ipfs/${request.params.hash}`, {
-    cf: {
-       cacheTtlByStatus: { 
-        '200-299': 86400, // one day
-        '404': 1, 
-        '500-599': 0 
-      } 
-    },
-  })
-  .then(async (res) => {
-    if (res.ok)
-      return new Response(await res.arrayBuffer(), {
-        headers: res.headers
-      })
-    throw res
-  })
-
-  return response
-})
 
 router.post('/contract/:command', async (request, env, ctx) => {
   const body = await request.json()
@@ -57,7 +37,36 @@ router.post('/contract/:command', async (request, env, ctx) => {
   return text(transaction.toXDR())
 })
 
-router.all('*', () => StatusError(404, 'Not Found'))
+router.get('/ipfs/:accountIssuer/:hash', async (request, env, ctx) => {
+  if (await env.FLAGGED.get(request.params.accountIssuer))
+    throw new StatusError(403, 'Forbidden')
+
+  const response = await fetch(`https://ipfs.io/ipfs/${request.params.hash}`, {
+    cf: {
+       cacheTtlByStatus: { 
+        '200-299': 86400, // one day
+        '404': 1, 
+        '500-599': 0 
+      } 
+    },
+  })
+  .then(async (res) => {
+    if (res.ok)
+      return new Response(await res.arrayBuffer(), {
+        headers: res.headers
+      })
+    throw res
+  })
+
+  return response
+})
+
+router.post('/flag/:accountIssuer', async (request, env, ctx) => {
+  await env.FLAGGED.put(request.params.accountIssuer, 1)
+  return status(204)
+})
+
+router.all('*', () => {throw new StatusError(404, 'Not Found')})
 
 exports.handlers = {
   fetch: (...args) => router
