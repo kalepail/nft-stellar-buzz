@@ -2,7 +2,7 @@
   "private": true,
   "module": "./dist/shim.mjs",
   "scripts": {
-    "start": "miniflare -w -d -m -k FLAGGED -e .env",
+    "start": "miniflare -w -d -m -k FLAGGED -e .env.local",
     "build": "webpack",
     "deploy": "wrangler publish"
   },
