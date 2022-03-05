@@ -1,9 +1,8 @@
 {
-  "name": "vite-vue-starter",
-  "version": "0.0.0",
+  "private": true,
   "scripts": {
     "start": "vite",
-    "build": "vite build --mode public",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
