@@ -1,3 +1,7 @@
+const { Server } = StellarSdk
+
+export const server = new Server('https://horizon-testnet.stellar.org')
+
 export async function handleResponse(response) {
   if (response.ok)
     return response.headers.get('content-type')?.indexOf('json') > -1 ? response.json() : response.text()

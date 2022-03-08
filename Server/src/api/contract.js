@@ -12,10 +12,10 @@ export default async (request, env, ctx) => {
   switch(request.params.command) {
     case 'mint':
       xdr = await mint(body, env)
-    break;
+    break
     case 'offer':
       xdr = await offer(body, env)
-    break;
+    break
   }
 
   const transaction = new Transaction(xdr, Networks[env.STELLAR_NETWORK])
