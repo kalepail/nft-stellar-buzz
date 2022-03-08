@@ -4,7 +4,7 @@ export default async (request, env, ctx) => {
   if (await env.FLAGGED.get(request.params.accountIssuer))
     throw new StatusError(403, 'Forbidden')
 
-  const response = await fetch(`https://ipfs.io/ipfs/${request.params.hash}`, {
+  const response = await fetch(`https://cloudflare-ipfs.com/ipfs/${request.params.hash}`, {
     cf: {
        cacheTtlByStatus: { 
         '200-299': 86400, // one day
