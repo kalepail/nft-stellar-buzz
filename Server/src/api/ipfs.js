@@ -1,10 +1,28 @@
 import { StatusError } from 'itty-router-extras'
+import ImgixClient from '@imgix/js-core'
 
 export default async (request, env, ctx) => {
   if (await env.FLAGGED.get(request.params.accountIssuer))
     throw new StatusError(403, 'Forbidden')
 
-  const response = await fetch(`https://cloudflare-ipfs.com/ipfs/${request.params.hash}`, {
+  let url
+
+  if (
+    env.IMGIX_DOMAIN 
+    && env.IMGIX_TOKEN
+  ) {
+    const client = new ImgixClient({
+      domain: env.IMGIX_DOMAIN,
+      secureURLToken: env.IMGIX_TOKEN,
+    })
+  
+    url = client.buildURL(`https://cloudflare-ipfs.com/ipfs/${request.params.hash}`, { h: 16 * 12 * 3 })
+  }
+
+  else
+    url = `https://cloudflare-ipfs.com/ipfs/${request.params.hash}`
+
+  const response = await fetch(url, {
     cf: {
        cacheTtlByStatus: { 
         '200-299': 86400, // one day
