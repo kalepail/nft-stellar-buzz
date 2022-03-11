@@ -72,6 +72,10 @@
       <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else-if="userAccountLoaded"></button>
     </li>
   </ul>
+
+  <footer>
+    <a href="https://github.com/tyvdh/nft-stellar-buzz">GitHub Repo</a>
+  </footer>
 </template>
 
 <script>
@@ -332,5 +336,8 @@ li {
 }
 strong {
   font-weight: 600;
+}
+footer {
+  margin-top: 30px;
 }
 </style>
