@@ -5,7 +5,7 @@ export default async (request, env, ctx) => {
   if (await env.FLAGGED.get(request.params.accountIssuer))
     throw new StatusError(403, 'Forbidden')
 
-  let url
+  let url = `https://cloudflare-ipfs.com/ipfs/${request.params.hash}`
 
   if (
     env.IMGIX_DOMAIN 
@@ -16,11 +16,8 @@ export default async (request, env, ctx) => {
       secureURLToken: env.IMGIX_TOKEN,
     })
   
-    url = client.buildURL(`https://cloudflare-ipfs.com/ipfs/${request.params.hash}`, { h: 16 * 12 * 3 })
+    url = client.buildURL(url, { h: 16 * 12 * 3 })
   }
-
-  else
-    url = `https://cloudflare-ipfs.com/ipfs/${request.params.hash}`
 
   const response = await fetch(url, {
     cf: {
