@@ -25,13 +25,7 @@
       <button @click="createAccount('issuer')" type="button" :disabled="loading">{{issuerAccount ? 'Regenerate' : 'Generate'}}</button>
     </label>
 
-    <label>
-      IPFS Hash
-      <input type="text" v-model="ipfsHash" />
-      <img :src="`${apiUrl}/ipfs/0x0/${ipfsHash}`" v-if="ipfsHash" />
-    </label>
-
-    <button :disabled="loading" v-if="issuerAccountLoaded && ipfsHash">Mint</button>
+    <button :disabled="loading" v-if="issuerAccountLoaded">Mint</button>
   </form>
 
   <h1>NFTs</h1>
@@ -40,14 +34,13 @@
     <li
       v-for="balance in userAccountLoaded.balances.filter((balance) => 
         balance.asset_type !== 'native' 
-        && balance.asset_code === 'NFT'
         && parseFloat(balance.balance) 
         && !parseFloat(balance.selling_liabilities)
       )"
       :key="balance.asset_type + balance.asset_code + balance.asset_issuer"
       @click="flag(balance.asset_issuer)"
     >
-      <img :src="`${apiUrl}/ipfs/${balance.asset_issuer}/${ipfsHashMap[balance.asset_issuer]}`" v-if="ipfsHashMap[balance.asset_issuer]" />
+      <img :src="`${apiUrl}/image/${balance.asset_issuer}/${balance.asset_code}`" />
       <button @click="apiOffer('sell', balance)" :disabled="loading">Sell</button>
     </li>
   </ul>
@@ -58,16 +51,16 @@
       :key="offer.id"
       @click="flag(offer.buying.asset_issuer || offer.selling.asset_issuer)"
     >
-      <img :src="`${apiUrl}/ipfs/${
+      <img :src="`${apiUrl}/image/${
         offer.buying.asset_issuer 
         || offer.selling.asset_issuer
-      }/${ipfsHashMap[
-        offer.buying.asset_issuer
-        || offer.selling.asset_issuer
-      ]}`" v-if="ipfsHashMap[
-        offer.buying.asset_issuer
-        || offer.selling.asset_issuer
-      ]" />
+      }/${
+        offer.buying.asset_code 
+        || offer.selling.asset_code
+      }`" v-if="
+        offer.buying.asset_code 
+        || offer.selling.asset_code
+      " />
       <button @click="apiOffer('delete', offer)" :disabled="loading" v-if="offer.seller === userAccount">Delete Offer</button>
       <button @click="apiOffer('buy', offer)" :disabled="loading" v-html="offerPriceString(offer)" v-else-if="userAccountLoaded"></button>
     </li>
@@ -98,16 +91,13 @@ export default {
       sponsor: import.meta.env.VITE_SPONSOR_PK,
       apiUrl: import.meta.env.VITE_WRANGLER_API,
 
-      userSecret: localStorage.getItem('secret'),
-      issuerAccount: null,
-      ipfsHash: null,
+      userSecret: localStorage.getItem('userSecret'),
+      issuerAccount: localStorage.getItem('issuerAccount'),
 
       userAccountLoaded: null,
       issuerAccountLoaded: null,
 
       offers: [],
-      ipfsHashMap: {},
-
       loading: false
     }
   },
@@ -122,15 +112,17 @@ export default {
   watch: {
     userSecret() {
       if (StrKey.isValidEd25519PublicKey(this.userAccount))
-        localStorage.setItem('secret', this.userSecret)
+        localStorage.setItem('userSecret', this.userSecret)
     },
     async userAccount() {
       if (this.userAccount)
         this.userAccountLoaded = await this.loadAccount(this.userAccount)
     },
     async issuerAccount() {
-      if (this.issuerAccount)
+      if (StrKey.isValidEd25519PublicKey(this.issuerAccount)) {
         this.issuerAccountLoaded = await this.loadAccount(this.issuerAccount)
+        localStorage.setItem('issuerAccount', this.issuerAccount)
+      }
     },
   },
   created() {
@@ -184,17 +176,9 @@ export default {
       return accountId 
       ? server
       .loadAccount(accountId)
-      .then((account) => {
-        // When loading account data take a quick look for any IPFS metadata. If you find some add it to the ipfsHashMap for easy reference later
-        if (account.data_attr.ipfshash)
-          this.ipfsHashMap[account.id] = atob(account.data_attr.ipfshash) // Metadata values are base64 encoded on Horizon so we'll need to decode to the actual IPFS hash here
-
-        // Loop over all account assets and for anything marked as an NFT asset_code take a peek to see if it stores an ipfshash as well. Gotta build that complete ipfsHashMap
-        account.balances
-        .filter((balance) => balance.asset_code === 'NFT')
-        .forEach((balance) => this.loadAccount(balance.asset_issuer))
-
-        return account
+      .catch((err) => {
+        if (err?.response?.status === 404)
+          return server.friendbot(accountId).call()
       })
       : null
     },
@@ -203,14 +187,7 @@ export default {
       .offers()
       .sponsor(this.sponsor) // When looking up all open NFT sell offers we use the offer sponsor field to filter out offers to only those involving our specific NFT project
       .call()
-      .then(({ records }) => {
-        records.forEach((record) => this.loadAccount( // Load up the offer asset issuing accounts in order to update the ipfsHashMap with new NFT metadata
-          record.buying.asset_issuer 
-          || record.selling.asset_issuer
-        ))
-        
-        return records
-      })
+      .then(({ records }) => records)
     },
 
     apiMint,

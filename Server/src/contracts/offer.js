@@ -17,10 +17,11 @@ export default async function offer(body, env) {
   const {
     userAccount,
     issuerAccount,
+    issuerCode,
     offerId = 0
   } = body
 
-  const NFT = new Asset('NFT', issuerAccount)
+  const NFT = new Asset(issuerCode, issuerAccount)
 
   let {
     selling,

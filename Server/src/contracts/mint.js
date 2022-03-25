@@ -14,32 +14,44 @@ export default async function mint(body, env) {
   const {
     userAccount,
     issuerAccount,
-    ipfsHash
   } = body
 
   // Configure the NFT asset
   // NOTE: There's nothing particularly special about the 'NFT' code name but if you change it here you'll want to also change references to "NFT" the code name on the client side when searching for ipfs hashes
-  const NFT = new Asset('NFT', issuerAccount)
+
+  // const issuerAccountLoaded = await fetch(`${env.HORIZON_URL}/accounts/${issuerAccount}`)
+  // .then(handleResponse)
+
+  // let nftSequence = issuerAccountLoaded.data.nftseq ? Buffer.from(issuerAccountLoaded.data.nftseq, 'base64').toString('utf8') : issuerAccountLoaded.sequence
+  // let assetCode = new BigNumber(issuerAccountLoaded.sequence).minus(nftSequence).toFixed(0)
+  // const NFT = new Asset(assetCode, issuerAccount)
 
   // First we'll load up the user account as it will pay the transaction fee and sequence number 
-  return fetch(`${env.HORIZON_URL}/accounts/${userAccount}`)
+  return fetch(`${env.HORIZON_URL}/accounts/${issuerAccount}`)
   .then(handleResponse)
   .then((account) => {
+    const nftSequence = account.data.nftseq ? Buffer.from(account.data.nftseq, 'base64').toString('utf8') : account.sequence
+    const assetCode = new BigNumber(account.sequence).minus(nftSequence).toFixed(0)
+    const NFT = new Asset(assetCode, issuerAccount)
     const ops = []
 
     ops.push(
       Operation.setOptions({
-        setFlags: 15, // This is where we configure the NFT we're about the issue as an auth required asset
+        setFlags: 11, // This is where we configure the NFT we're about the issue as an auth required asset
         inflationDest: userAccount, // This is where we mark the account which will receive the royalty payments
         source: issuerAccount
       }),
+    )
 
+    if (!parseInt(assetCode)) ops.push(
       Operation.manageData({ // This is where we assign the ipfsHash as metadata to the issuing account
-        name: 'ipfshash',
-        value: ipfsHash,
+        name: 'nftseq',
+        value: nftSequence,
         source: issuerAccount
-      }),
+      })
+    )
 
+    ops.push(
       Operation.changeTrust({ // This is where we open access on the user account to receive the original, only, 1:1 NFT
         asset: NFT,
         limit: '1',
@@ -76,7 +88,7 @@ export default async function mint(body, env) {
     let transaction = new TransactionBuilder(
       new Account(account.id, account.sequence), 
       {
-        fee: new BigNumber(1).div('0.0000001').div(ops.length).toFixed(0, 3), // 1 XLM div # of ops
+        fee: 0, // new BigNumber(1).div('0.0000001').div(ops.length).toFixed(0, 3), // 1 XLM div # of ops
         networkPassphrase: Networks[env.STELLAR_NETWORK]
       }
     ).setTimeout(0)

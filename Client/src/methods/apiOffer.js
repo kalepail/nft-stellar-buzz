@@ -21,6 +21,7 @@ export default function apiOffer(side, record) {
 
   // Depending on the state of the sale and the counter party making the request the asset issuer will be one of these values in this order
   const issuerAccount = record.asset_issuer || record.buying.asset_issuer || record.selling.asset_issuer
+  const issuerCode = record.asset_code || record.buying.asset_code || record.selling.asset_code
 
   // Make the request to the Auth Server for an appropriately defined XDR for the sale or purchase of the NFT
   return fetch(`${this.apiUrl}/contract/offer`, {
@@ -28,6 +29,7 @@ export default function apiOffer(side, record) {
     body: JSON.stringify({
       userAccount: this.userAccount,
       issuerAccount, // The issuing account for the NFT. The account hosting the metadata
+      issuerCode, // The issuing account NFT iteration code
       offerId: side === 'delete' ? record.id : 0, // If we're creating a new offer this will be zero. If we're deleting the offer this will be the id of the existing offer
       price, // The price as input into the prompt
       [side === 'sell' ? 'buying' : 'selling']: 'native' // If we're selling the NFT we want to "buy" XLM (native). If we're buying the NFT we're selling XLM
