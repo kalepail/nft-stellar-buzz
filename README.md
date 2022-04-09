@@ -52,9 +52,9 @@ Generative art is art created through the use of code. Algorithms are utilized t
  7. Inside of `.env.local` fill in the sponsor secret key in the SPONSOR_SK variable.
  8. Inside of `.env` fill in the signer public key into the VITE_SIGNER_PK variable.
  9. Inside of `.env.development` fill in the sponsor public key in the VITE_SPONSOR variable.
- 10. Create a new terminal window, and run `npm i --no optional ` inside of the server directory.
+ 10. Create a new terminal window, and run `npm i --no-optional ` inside of the server directory.
  11. Run `npm start` inside of the server directory.
- 12. Navigate to client directory, create an additional terminal window and run `npm i --no optional ` inside of the client directory. 
+ 12. Navigate to client directory, create an additional terminal window and run `npm i --no-optional ` inside of the client directory. 
  13. Run `npm start` inside of the client directory.
  14. Yay! You are ready to start coding. 🥳
  
@@ -80,4 +80,3 @@ In this scenario the art would change based the time you called the NFT. Since t
 In this scenario the art would change based on the weather at your current location. You could pull in the coordinates of your current location and tokenize the different types of weather (sunny, cloudy, rainy, etc). Combining location and weather together would result in dynamic SVGs.
 
 *This is meant to be a collaborative workshop, so don't be afraid to work with other people to come up with great ideas*.
-
